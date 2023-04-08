@@ -1,0 +1,36 @@
+[package]
+edition = "2021"
+name = "mpic"
+version = "0.1.0"
+authors = ["Nerry"]
+description = "Simple Lossy Compression Image Format for Embedded Platforms"
+readme = "README.md"
+# documentation = "http://"
+homepage = "https://github.com/neri/mpic"
+repository = "https://github.com/neri/mpic"
+license = "MIT"
+categories = ["embedded", "no-std"]
+keywords = ["graphics", "embedded", "embedded-graphics", "image"]
+exclude = [
+    "/.github/",
+    ".gitignore",
+    "/temp/",
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["std"]
+alloc = []
+embedded = ["embedded-graphics"]
+std = []
+
+[dependencies]
+embedded-graphics = { optional = true }
+heapless = {}
+
+[workspace]
+members = [
+    "viewer",
+    "cli",
+]
