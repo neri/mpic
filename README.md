@@ -2,6 +2,8 @@
 
 Simple Lossy Compression Image Format for Embedded Platforms
 
+![](images/img_3246.jpg)
+
 ## Features
 
 - Simple.
@@ -19,11 +21,19 @@ Simple Lossy Compression Image Format for Embedded Platforms
 - Finally, the data is converted to difference data and compressed losslessly using the sliding dictionary method.
 - When decoding, these processes are performed in reverse order.
 
-## Format
+## Comparison with sample images
 
-- All multi-byte data is encoded in little-endian.
+| Mandrill              | Original Size | PNG Size |                               |
+| --------------------- | ------------- | -------- | ----------------------------- |
+| Original 24bit Bitmap | 197KB         | 155KB    | ![](samples/Mandrill-org.png) |
+| MPIC                  | 75KB          | 135KB    | ![](samples/Mandrill.png)     |
+| JPEG                  | 40KB          | -        | ![](samples/Mandrill.jpeg)    |
+
+## File Format
 
 ### File Header
+
+- All multi-byte data is encoded in little-endian.
 
 ```
 #[repr(C, packed)]
@@ -53,3 +63,9 @@ pub struct FileHeader {
 | `00vv_vvvv`             | Raw Value                                                                                                           |
 | `01nn_nnnn` `0mmm_mmmm` | Together with the trailing byte value, it indicates the length `(n+3)` and offset `-(m+1)` of the slide dictionary. |
 | `1xxx_xxxx`             | Reserved                                                                                                            |
+
+## License
+
+MIT
+
+(C) 2023 Nerry
