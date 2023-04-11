@@ -8,7 +8,7 @@ Simple Lossy Compression Image Format for Embedded Platforms
 
 - Simple.
 - Lossy compression.
-- Small memory footprint.
+- Small memory footprint, only a few hundred bytes of stack memory required for decoding.
 - Designed for 16bpp color images and supports `embedded-graphics`; add `features = ["embedded"]` to Cargo.toml.
 - Support for `no_std`, No `alloc` is needed for decoding.
 
@@ -23,11 +23,23 @@ Simple Lossy Compression Image Format for Embedded Platforms
 
 ## Comparison with sample images
 
-| Mandrill              | Original Size | PNG Size |                               |
-| --------------------- | ------------- | -------- | ----------------------------- |
-| Original 24bit Bitmap | 197KB         | 155KB    | ![](samples/Mandrill-org.png) |
-| MPIC                  | 75KB          | 135KB    | ![](samples/Mandrill.png)     |
-| JPEG                  | 40KB          | -        | ![](samples/Mandrill.jpeg)    |
+| Mandrill              | Original Size | Converted  PNG Size |                              |
+| --------------------- | ------------- | ------------------- | ---------------------------- |
+| Original 24bit Bitmap | 197KB         | 155KB               | ![](images/Mandrill-org.png) |
+| MPIC                  | 75KB          | 135KB               | ![](images/Mandrill.png)     |
+| JPEG                  | 40KB          | -                   | ![](images/Mandrill.jpeg)    |
+
+| Parrots               | Original Size | Converted  PNG Size |                             |
+| --------------------- | ------------- | ------------------- | --------------------------- |
+| Original 24bit Bitmap | 197KB         | 105KB               | ![](images/Parrots-org.png) |
+| MPIC                  | 60KB          | 87KB                | ![](images/Parrots.png)     |
+| JPEG                  | 21KB          | -                   | ![](images/Parrots.jpeg)    |
+
+| Pepper                | Original Size | Converted  PNG Size |                            |
+| --------------------- | ------------- | ------------------- | -------------------------- |
+| Original 24bit Bitmap | 197KB         | 117KB               | ![](images/Pepper-org.png) |
+| MPIC                  | 69KB          | 105KB               | ![](images/Pepper.png)     |
+| JPEG                  | 28KB          | -                   | ![](images/Pepper.jpeg)    |
 
 ## File Format
 
