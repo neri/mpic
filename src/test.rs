@@ -47,8 +47,9 @@ fn rgb_yuv() {
 
                 assert!(
                     error <= allowed_error,
-                    "MAX_ERROR {} RGB {:?} => YUV {:?} => {:?} ",
+                    "Error exceeded limit: {} > {} RGB {:?} => YUV {:?} => {:?} ",
                     error,
+                    allowed_error,
                     (rgb.r, rgb.g, rgb.b),
                     (yuv.y, yuv.u, yuv.v),
                     (rgb2.r, rgb2.g, rgb2.b),

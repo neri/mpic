@@ -51,7 +51,7 @@ impl<'a, T> Decoder<'a, T> {
                             let y = buf_y[(y7 * 8 + x7) as usize];
                             let u = buf_u[(y7 * 8 + x7) as usize];
                             let v = buf_v[(y7 * 8 + x7) as usize];
-                            let rgb = Rgb::from_yuv(Yuv666 { y, u, v });
+                            let rgb = Rgb::from_yuv(Yuv666::new(y, u, v));
                             draw_pixel(x8 + x7 as u32, y8 + y7 as u32, rgb);
                         }
                     }
@@ -89,20 +89,16 @@ impl<'a, T> Decoder<'a, T> {
     pub fn decode_chunk(src: &[u8]) -> Result<([u8; 64], [u8; 64], [u8; 64]), DecodeError> {
         let mut vec = Vec::<u8, UNCOMPRESSED_SIZE>::new();
         chunk::decompress(src, &mut vec).ok_or(DecodeError::InvalidData)?;
-        if vec.len() != chunk::UNCOMPRESSED_SIZE {
-            return Err(DecodeError::InvalidData);
-        }
 
-        let buf_y = unsafe { core::mem::transmute::<_, &mut [u8; 64]>(vec.as_mut_ptr()) };
-        ac2dc(buf_y);
+        let mut slice: [u8; UNCOMPRESSED_SIZE] =
+            vec.into_array().map_err(|_| DecodeError::InvalidData)?;
+        ac2dc(&mut slice);
 
-        let buf_u = unsafe { core::mem::transmute::<_, &mut [u8; 16]>(vec.as_mut_ptr().add(64)) };
-        ac2dc(buf_u);
-        let buf_u = demosaic_uv(&buf_u);
+        let buf_y: &[u8; 64] = &slice[0..64].try_into().unwrap();
 
-        let buf_v = unsafe { core::mem::transmute::<_, &mut [u8; 16]>(vec.as_mut_ptr().add(80)) };
-        ac2dc(buf_v);
-        let buf_v = demosaic_uv(&buf_v);
+        let buf_u = demosaic_uv(&slice[64..80].try_into().unwrap());
+
+        let buf_v = demosaic_uv(&slice[80..96].try_into().unwrap());
 
         Ok((*buf_y, buf_u, buf_v))
     }
@@ -117,7 +113,7 @@ impl<T> OriginDimensions for Decoder<'_, T> {
 }
 
 #[cfg(feature = "embedded")]
-impl<T: PixelColor + From<Rgb> + Sized> ImageDrawable for Decoder<'_, T> {
+impl<T: PixelColor + From<Rgb>> ImageDrawable for Decoder<'_, T> {
     type Color = T;
 
     #[inline]
@@ -156,6 +152,7 @@ impl<T: PixelColor + From<Rgb> + Sized> ImageDrawable for Decoder<'_, T> {
 }
 
 /// Unmosaic the U and V channels
+#[inline]
 pub(crate) fn demosaic_uv(data: &[u8; 16]) -> [u8; 64] {
     let mut buf = [0u8; 64];
     for y in 0..4 {
@@ -172,6 +169,7 @@ pub(crate) fn demosaic_uv(data: &[u8; 16]) -> [u8; 64] {
 }
 
 /// Decode DC array from AC array
+#[inline]
 fn ac2dc(data: &mut [u8]) {
     let mut acc = data[0];
     for p in data.iter_mut().skip(1) {

@@ -1,4 +1,12 @@
 //! mPic - Simple Lossy Compression Image Format for Embedded Platforms
+//!
+//! ## Features
+//!
+//! - Simple.
+//! - Lossy compression.
+//! - Small memory footprint.
+//! - Designed for 16bpp color images and supports `embedded-graphics`; add `features = ["embedded"]` to Cargo.toml.
+//! - Support for `no_std`, No `alloc` is needed for decoding.
 
 #![cfg_attr(not(test), no_std)]
 #![feature(const_trait_impl)]
@@ -75,16 +83,22 @@ impl FileHeader {
     pub const VER_CURRENT: u8 = 0;
 
     #[inline]
-    pub fn from_bytes<'a>(blob: &'a [u8]) -> Option<&'a Self> {
-        if blob.len() < Self::MINIMAL_SIZE {
+    pub const fn new(width: u32, height: u32) -> Option<Self> {
+        if width == 0
+            || width >= 0x10000
+            || (width & 7) != 0
+            || height == 0
+            || height >= 0x10000
+            || (height & 7) != 0
+        {
             return None;
         }
-        Some(unsafe { &*(blob.as_ptr() as *const FileHeader) })
-    }
-
-    #[inline]
-    pub fn bytes<'a>(&'a self) -> &'a [u8] {
-        unsafe { slice::from_raw_parts(self as *const _ as *const u8, size_of::<Self>()) }
+        Some(Self {
+            magic: Self::MAGIC,
+            version: Self::VER_CURRENT,
+            width: (width as u16).to_le(),
+            height: (height as u16).to_le(),
+        })
     }
 
     #[inline]
@@ -100,21 +114,16 @@ impl FileHeader {
     }
 
     #[inline]
-    pub const fn new(width: u32, height: u32) -> Self {
-        Self {
-            magic: Self::MAGIC,
-            version: Self::VER_CURRENT,
-            width: if width < 0xFFFF {
-                (width as u16).to_le()
-            } else {
-                0
-            },
-            height: if height < 0xFFFF {
-                (height as u16).to_le()
-            } else {
-                0
-            },
+    pub fn from_bytes<'a>(blob: &'a [u8]) -> Option<&'a Self> {
+        if blob.len() < Self::MINIMAL_SIZE {
+            return None;
         }
+        Some(unsafe { &*(blob.as_ptr() as *const FileHeader) })
+    }
+
+    #[inline]
+    pub fn bytes<'a>(&'a self) -> &'a [u8] {
+        unsafe { slice::from_raw_parts(self as *const _ as *const u8, size_of::<Self>()) }
     }
 
     #[inline]

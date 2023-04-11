@@ -1,5 +1,6 @@
 //! mpic cli sample app
 
+use image::GenericImageView;
 use std::{
     env,
     path::{Path, PathBuf},
@@ -66,6 +67,17 @@ fn main() {
             )
         }
     };
+
+    {
+        let width = dynamic_image.width();
+        let height = dynamic_image.height();
+        if (width & 7) != 0 || (height & 7) != 0 {
+            panic!(
+                "Width and height must be a multiple of 8, but {} {}",
+                width, height
+            );
+        }
+    }
 
     match output_format {
         Format::Image(format) => dynamic_image

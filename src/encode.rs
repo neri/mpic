@@ -8,9 +8,8 @@ impl Encoder {
     where
         F: FnMut(&[u8]),
     {
-        let header = FileHeader::new(width, height);
-
-        if !header.is_valid() || data.len() < (width as usize * height as usize * 3) {
+        let header = FileHeader::new(width, height).ok_or(EncodeError::InvalidInput)?;
+        if data.len() < (width as usize * height as usize * 3) {
             return Err(EncodeError::InvalidInput);
         }
         writer(header.bytes());
@@ -28,12 +27,12 @@ impl Encoder {
                     let r = data[offset + 0];
                     let g = data[offset + 1];
                     let b = data[offset + 2];
-                    let yuv = Yuv666::from_rgb(Rgb { r, g, b });
+                    let yuv = Yuv666::from_rgb(Rgb::new(r, g, b));
                     buf_y[index] = yuv.y;
                     buf_u[index] = yuv.u;
                     buf_v[index] = yuv.v;
                 }
-                let block = Self::encode_chunk(&mut buf_y, &buf_u, &buf_v);
+                let block = Self::encode_chunk(&buf_y, &buf_u, &buf_v);
                 writer(&[block.len() as u8]);
                 writer(block.as_slice());
             }
@@ -41,25 +40,24 @@ impl Encoder {
         Ok(())
     }
 
-    pub fn encode_chunk(buf_y: &mut [u8; 64], buf_u: &[u8; 64], buf_v: &[u8; 64]) -> Vec<u8, 128> {
-        dc2ac(buf_y);
-
-        let mut buf_u = mosaic_uv(buf_u);
-        dc2ac(&mut buf_u);
-
-        let mut buf_v = mosaic_uv(buf_v);
-        dc2ac(&mut buf_v);
-
+    pub fn encode_chunk(buf_y: &[u8; 64], buf_u: &[u8; 64], buf_v: &[u8; 64]) -> Vec<u8, 128> {
         let mut buf = [0; UNCOMPRESSED_SIZE];
         for i in 0..64 {
             buf[i] = buf_y[i];
         }
+
+        let buf_u = mosaic_uv(buf_u);
+
+        let buf_v = mosaic_uv(buf_v);
+
         for i in 0..16 {
             buf[64 + i] = buf_u[i];
         }
         for i in 0..16 {
             buf[80 + i] = buf_v[i];
         }
+
+        dc2ac(&mut buf);
 
         let mut vec = Vec::<u8, 128>::new();
         chunk::compress(&buf, &mut vec);
@@ -102,6 +100,7 @@ pub(crate) fn mosaic_uv(data: &[u8; 64]) -> [u8; 16] {
 }
 
 /// Encode DC array to AC array
+#[inline]
 fn dc2ac(data: &mut [u8]) {
     let mut acc = data[0];
     for p in data.iter_mut().skip(1) {
