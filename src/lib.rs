@@ -4,13 +4,12 @@
 //!
 //! - Simple.
 //! - Lossy compression.
-//! - Small memory footprint.
+//! - Small memory footprint, only a few hundred bytes of stack memory required for decoding.
 //! - Designed for 16bpp color images and supports `embedded-graphics`; add `features = ["embedded"]` to Cargo.toml.
 //! - Support for `no_std`, No `alloc` is needed for decoding.
 
 #![cfg_attr(not(test), no_std)]
 #![feature(const_trait_impl)]
-#![feature(maybe_uninit_uninit_array)]
 
 use core::{mem::size_of, slice};
 #[cfg(feature = "embedded")]
@@ -118,7 +117,8 @@ impl FileHeader {
         if blob.len() < Self::MINIMAL_SIZE {
             return None;
         }
-        Some(unsafe { &*(blob.as_ptr() as *const FileHeader) })
+        let header = unsafe { &*(blob.as_ptr() as *const FileHeader) };
+        header.is_valid().then(|| header)
     }
 
     #[inline]

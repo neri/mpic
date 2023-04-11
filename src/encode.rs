@@ -57,8 +57,6 @@ impl Encoder {
             buf[80 + i] = buf_v[i];
         }
 
-        dc2ac(&mut buf);
-
         let mut vec = Vec::<u8, 128>::new();
         chunk::compress(&buf, &mut vec);
 
@@ -97,15 +95,4 @@ pub(crate) fn mosaic_uv(data: &[u8; 64]) -> [u8; 16] {
         }
     }
     buf
-}
-
-/// Encode DC array to AC array
-#[inline]
-fn dc2ac(data: &mut [u8]) {
-    let mut acc = data[0];
-    for p in data.iter_mut().skip(1) {
-        let v = *p;
-        *p = v.wrapping_sub(acc) & 0x3F;
-        acc = v;
-    }
 }

@@ -18,7 +18,7 @@ Simple Lossy Compression Image Format for Embedded Platforms
 - Convert RGB with 8 bits per channel to YUV with 6 bits per channel.
 - Thin out the U and V channels to 1/4.
 - Because the color difference information is thinned out, even in the worst case, the compression is guaranteed to be more than half of the raw bitmap.
-- Finally, the data is converted to difference data and compressed losslessly using the sliding dictionary method.
+- Finally, lossless compression is performed using the sliding dictionary method.
 - When decoding, these processes are performed in reverse order.
 
 ## Comparison with sample images
@@ -32,7 +32,7 @@ Simple Lossy Compression Image Format for Embedded Platforms
 | Parrots               | Original Size | Converted  PNG Size |                             |
 | --------------------- | ------------- | ------------------- | --------------------------- |
 | Original 24bit Bitmap | 197KB         | 105KB               | ![](images/Parrots-org.png) |
-| MPIC                  | 60KB          | 87KB                | ![](images/Parrots.png)     |
+| MPIC                  | 59KB          | 87KB                | ![](images/Parrots.png)     |
 | JPEG                  | 21KB          | -                   | ![](images/Parrots.jpeg)    |
 
 | Pepper                | Original Size | Converted  PNG Size |                            |
