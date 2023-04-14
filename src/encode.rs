@@ -46,9 +46,7 @@ impl Encoder {
             buf[i] = buf_y[i];
         }
 
-        let buf_u = mosaic_uv(buf_u);
-
-        let buf_v = mosaic_uv(buf_v);
+        let (buf_u, buf_v) = mosaic_uv(buf_u, buf_v);
 
         for i in 0..16 {
             buf[64 + i] = buf_u[i];
@@ -59,6 +57,7 @@ impl Encoder {
 
         let mut vec = Vec::<u8, 128>::new();
         chunk::compress(&buf, &mut vec);
+        // vec.extend_from_slice(&buf).unwrap();
 
         {
             let mut unpacked = Vec::<u8, UNCOMPRESSED_SIZE>::new();
@@ -78,21 +77,29 @@ impl Encoder {
 }
 
 /// Mosaic the U and V channels.
-pub(crate) fn mosaic_uv(data: &[u8; 64]) -> [u8; 16] {
-    let mut buf = [0u8; 16];
+pub(crate) fn mosaic_uv(buf_u: &[u8; 64], buf_v: &[u8; 64]) -> ([u8; 16], [u8; 16]) {
+    let mut out_u = [0u8; 16];
+    let mut out_v = [0u8; 16];
+
     for y in 0..4 {
         for x in 0..4 {
             let base = y * 16 + x * 2;
-            if false {
-                buf[y * 4 + x] = data[base];
-            } else {
-                let p0 = data[base] as usize;
-                let p1 = data[base + 1] as usize;
-                let p2 = data[base + 8] as usize;
-                let p3 = data[base + 9] as usize;
-                buf[y * 4 + x] = ((p0 + p1 + p2 + p3) / 4) as u8;
-            }
+
+            let u0 = buf_u[base] as usize;
+            let u1 = buf_u[base + 1] as usize;
+            let u2 = buf_u[base + 8] as usize;
+            let u3 = buf_u[base + 9] as usize;
+
+            let v0 = buf_v[base] as usize;
+            let v1 = buf_v[base + 1] as usize;
+            let v2 = buf_v[base + 8] as usize;
+            let v3 = buf_v[base + 9] as usize;
+
+            let base = y * 4 + x;
+            out_u[base] = ((u0 + u1 + u2 + u3) / 4) as u8;
+            out_v[base] = ((v0 + v1 + v2 + v3) / 4) as u8;
         }
     }
-    buf
+
+    (out_u, out_v)
 }

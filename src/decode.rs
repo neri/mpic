@@ -90,9 +90,6 @@ impl<'a, T> Decoder<'a, T> {
         let mut vec = Vec::<u8, UNCOMPRESSED_SIZE>::new();
         chunk::decompress(src, &mut vec).ok_or(DecodeError::InvalidData)?;
 
-        // let slice: [u8; UNCOMPRESSED_SIZE] =
-        //     vec.into_array().map_err(|_| DecodeError::InvalidData)?;
-
         let buf_y: &[u8; 64] = &vec[0..64]
             .try_into()
             .map_err(|_| DecodeError::InvalidData)?;
@@ -125,7 +122,6 @@ impl<T> OriginDimensions for Decoder<'_, T> {
 impl<T: PixelColor + From<Rgb>> ImageDrawable for Decoder<'_, T> {
     type Color = T;
 
-    #[inline]
     fn draw<D>(&self, target: &mut D) -> Result<(), D::Error>
     where
         D: DrawTarget<Color = Self::Color>,

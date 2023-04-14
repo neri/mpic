@@ -23,23 +23,23 @@ Simple Lossy Compression Image Format for Embedded Platforms
 
 ## Comparison with sample images
 
-| Mandrill              | Original Size | Converted  PNG Size |                              |
-| --------------------- | ------------- | ------------------- | ---------------------------- |
-| Original 24bit Bitmap | 197KB         | 155KB               | ![](images/Mandrill-org.png) |
-| MPIC                  | 75KB          | 135KB               | ![](images/Mandrill.png)     |
-| JPEG                  | 40KB          | -                   | ![](images/Mandrill.jpeg)    |
+| Mandrill              | Original Size | Converted PNG Size |                              |
+| --------------------- | ------------- | ------------------ | ---------------------------- |
+| Original 24bit Bitmap | 197KB         | 155KB              | ![](images/Mandrill-org.png) |
+| MPIC                  | 75KB          | 135KB              | ![](images/Mandrill.png)     |
+| JPEG                  | 40KB          | -                  | ![](images/Mandrill.jpeg)    |
 
-| Parrots               | Original Size | Converted  PNG Size |                             |
-| --------------------- | ------------- | ------------------- | --------------------------- |
-| Original 24bit Bitmap | 197KB         | 105KB               | ![](images/Parrots-org.png) |
-| MPIC                  | 59KB          | 87KB                | ![](images/Parrots.png)     |
-| JPEG                  | 21KB          | -                   | ![](images/Parrots.jpeg)    |
+| Parrots               | Original Size | Converted PNG Size |                             |
+| --------------------- | ------------- | ------------------ | --------------------------- |
+| Original 24bit Bitmap | 197KB         | 105KB              | ![](images/Parrots-org.png) |
+| MPIC                  | 59KB          | 87KB               | ![](images/Parrots.png)     |
+| JPEG                  | 21KB          | -                  | ![](images/Parrots.jpeg)    |
 
-| Pepper                | Original Size | Converted  PNG Size |                            |
-| --------------------- | ------------- | ------------------- | -------------------------- |
-| Original 24bit Bitmap | 197KB         | 117KB               | ![](images/Pepper-org.png) |
-| MPIC                  | 69KB          | 105KB               | ![](images/Pepper.png)     |
-| JPEG                  | 28KB          | -                   | ![](images/Pepper.jpeg)    |
+| Pepper                | Original Size | Converted PNG Size |                            |
+| --------------------- | ------------- | ------------------ | -------------------------- |
+| Original 24bit Bitmap | 197KB         | 117KB              | ![](images/Pepper-org.png) |
+| MPIC                  | 69KB          | 105KB              | ![](images/Pepper.png)     |
+| JPEG                  | 28KB          | -                  | ![](images/Pepper.jpeg)    |
 
 ## File Format
 

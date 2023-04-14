@@ -4,8 +4,8 @@ use heapless::Vec;
 pub const UNCOMPRESSED_SIZE: usize = 96;
 /// 6bit compacted chunk size
 pub const COMPACTED_SIZE: usize = 72;
-/// Theoretical Minimum Compressed Data: ANY VALUE + SLIDE LEAD + SLDIE TRAIL = 3
-pub const MINIMAL_COMPRESSED_SIZE: usize = 3;
+/// Theoretical Minimum Compressed Data: ANY VALUE + (SLIDE * 2) = 5
+pub const MINIMAL_COMPRESSED_SIZE: usize = 5;
 
 pub(crate) fn compress(src: &[u8; UNCOMPRESSED_SIZE], output: &mut Vec<u8, 128>) {
     output.clear();
@@ -14,11 +14,11 @@ pub(crate) fn compress(src: &[u8; UNCOMPRESSED_SIZE], output: &mut Vec<u8, 128>)
     let mut cursor = 0;
     while let Some(current) = src.get(cursor) {
         cursor += {
-            let max_len = 64;
             let min_len = 3;
+            let max_len = 64;
             let max_slide = 64;
             let mut matches = (0, 0);
-            for slide in 1..cursor.min(max_slide) {
+            for slide in 1..=cursor.min(max_slide) {
                 let len = check_len(src, cursor, cursor - slide).min(max_len);
                 if matches.0 < len {
                     matches = (len, slide);
