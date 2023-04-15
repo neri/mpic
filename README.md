@@ -4,6 +4,9 @@ Simple Lossy Compression Image Format for Embedded Platforms
 
 ![](images/img_3246.jpg)
 
+- [Repository](https://github.com/neri/mpic)
+- [Online Documents](https://neri.github.io/mpic/mpic/)
+
 ## Features
 
 - Simple.
@@ -11,6 +14,30 @@ Simple Lossy Compression Image Format for Embedded Platforms
 - Small memory footprint, only a few hundred bytes of stack memory required for decoding.
 - Designed for 16bpp color images and supports `embedded-graphics`; add `features = ["embedded"]` to Cargo.toml.
 - Support for `no_std`, No `alloc` is needed for decoding.
+
+## Example Apps
+
+### `/cli`: Command Line File Converter
+
+- Example of a command line application that converts files in MPIC format and other formats such as PNG to each other
+
+```sh
+$ cargo run -p cli INFILE OUTFILE
+```
+
+### `/viewer`: Image Viewer
+
+- Example of a GUI application that displays MPIC format files with `embedded-graphics`
+
+```sh
+$ cargo run -p viewer FILE_NAME
+```
+
+## Other Apps
+
+- [Online Image Viewer](https://github.com/neri/image-viewer)
+
+----
 
 ## How it works
 
@@ -75,6 +102,8 @@ pub struct FileHeader {
 | `00vv_vvvv`             | Raw Value                                                                                                           |
 | `01nn_nnnn` `0mmm_mmmm` | Together with the trailing byte value, it indicates the length `(n+3)` and offset `-(m+1)` of the slide dictionary. |
 | `1xxx_xxxx`             | Reserved                                                                                                            |
+
+----
 
 ## License
 
