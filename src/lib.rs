@@ -9,7 +9,6 @@
 //! - Support for `no_std`, No `alloc` is needed for decoding.
 
 #![cfg_attr(not(test), no_std)]
-#![feature(const_trait_impl)]
 
 use core::{mem::size_of, slice};
 #[cfg(feature = "embedded")]

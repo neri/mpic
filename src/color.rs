@@ -54,10 +54,10 @@ impl Yuv666 {
 
 impl Rgb {
     #[inline]
-    pub const fn from_yuv(yuv: Yuv666) -> Rgb {
-        let y = (u6_to_u8(yuv.y) as i32) - 16;
-        let u = (u6_to_u8(yuv.u) as i32) - 128;
-        let v = (u6_to_u8(yuv.v) as i32) - 128;
+    pub fn from_yuv(yuv: Yuv666) -> Rgb {
+        let y = (u6_to_u8(yuv.y) as i32).wrapping_sub(16);
+        let u = (u6_to_u8(yuv.u) as i32).wrapping_sub(128);
+        let v = (u6_to_u8(yuv.v) as i32).wrapping_sub(128);
 
         let r = ((298 * y + 409 * v + 128) >> 8).max(0).min(255);
         let g = ((298 * y - 100 * u - 208 * v + 128) >> 8).max(0).min(255);
@@ -71,14 +71,14 @@ impl Rgb {
     }
 }
 
-impl const From<Rgb> for Yuv666 {
+impl From<Rgb> for Yuv666 {
     #[inline]
     fn from(rgb: Rgb) -> Self {
         Self::from_rgb(rgb)
     }
 }
 
-impl const From<Yuv666> for Rgb {
+impl From<Yuv666> for Rgb {
     #[inline]
     fn from(yuv: Yuv666) -> Self {
         Self::from_yuv(yuv)
@@ -88,7 +88,7 @@ impl const From<Yuv666> for Rgb {
 macro_rules! from_rgb {
     ($ident:ident, $shift_r:expr, $shift_g:expr, $shift_b:expr) => {
         #[cfg(feature = "embedded")]
-        impl const From<Rgb> for $ident {
+        impl From<Rgb> for $ident {
             #[inline]
             fn from(rgb: Rgb) -> Self {
                 Self::new(
