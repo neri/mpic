@@ -4,7 +4,22 @@ use heapless::Vec;
 pub struct Encoder;
 
 impl Encoder {
-    pub fn encode<F>(data: &[u8], width: u32, height: u32, mut writer: F) -> Result<(), EncodeError>
+    #[cfg(feature = "alloc")]
+    pub fn encode(
+        data: &[u8],
+        width: u32,
+        height: u32,
+    ) -> Result<alloc::vec::Vec<u8>, EncodeError> {
+        let mut vec = alloc::vec::Vec::new();
+        Self::encode_to_writer(data, width, height, |v| vec.extend_from_slice(v)).map(|_| vec)
+    }
+
+    pub fn encode_to_writer<F>(
+        data: &[u8],
+        width: u32,
+        height: u32,
+        mut writer: F,
+    ) -> Result<(), EncodeError>
     where
         F: FnMut(&[u8]),
     {
@@ -27,7 +42,7 @@ impl Encoder {
                     let r = data[offset + 0];
                     let g = data[offset + 1];
                     let b = data[offset + 2];
-                    let yuv = Yuv666::from_rgb(Rgb::new(r, g, b));
+                    let yuv = MpicYuv666::from_rgb(MpicRgb888::new(r, g, b));
                     buf_y[index] = yuv.y;
                     buf_u[index] = yuv.u;
                     buf_v[index] = yuv.v;

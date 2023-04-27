@@ -31,13 +31,25 @@ impl<'a, T> Decoder<'a, T> {
         self.info
     }
 
-    pub fn decode<F>(&self, mut draw_pixel: F) -> Result<(), DecodeError>
-    where
-        F: FnMut(u32, u32, Rgb),
-    {
+    #[cfg(feature = "alloc")]
+    pub fn decode(&self) -> Result<alloc::vec::Vec<u8>, DecodeError> {
+        let width = self.info().width() as usize;
+        let height = self.info().height() as usize;
+        let vec_size = width * height * 3;
+        let mut vec = alloc::vec::Vec::with_capacity(vec_size);
+        vec.resize(vec_size, 0);
+        self.decode_to_slice(vec.as_mut()).map(|_| vec)
+    }
+
+    pub fn decode_to_slice(&self, output: &mut [u8]) -> Result<(), DecodeError> {
+        let width = self.info().width() as usize;
+        let height = self.info().height() as usize;
+        let vec_size = width * height * 3;
+        if output.len() < vec_size {
+            return Err(DecodeError::InvalidInput);
+        }
+
         let mut cursor = size_of::<FileHeader>();
-        let width = self.info().width as u32;
-        let height = self.info().height as u32;
         for y8 in (0..height).step_by(8) {
             for x8 in (0..width).step_by(8) {
                 let len = *self.blob.get(cursor).ok_or(DecodeError::InvalidData)? as usize;
@@ -51,8 +63,12 @@ impl<'a, T> Decoder<'a, T> {
                             let y = buf_y[(y7 * 8 + x7) as usize];
                             let u = buf_u[(y7 * 8 + x7) as usize];
                             let v = buf_v[(y7 * 8 + x7) as usize];
-                            let rgb = Rgb::from_yuv(Yuv666::new(y, u, v));
-                            draw_pixel(x8 + x7 as u32, y8 + y7 as u32, rgb);
+                            let rgb = MpicRgb666::from_yuv(MpicYuv666::new(y, u, v));
+
+                            let index = (x8 + x7 + (y8 + y7) * width) * 3;
+                            output[index] = rgb.r8();
+                            output[index + 1] = rgb.g8();
+                            output[index + 2] = rgb.b8();
                         }
                     }
                 })?;
@@ -119,7 +135,7 @@ impl<T> OriginDimensions for Decoder<'_, T> {
 }
 
 #[cfg(feature = "embedded")]
-impl<T: PixelColor + From<Rgb>> ImageDrawable for Decoder<'_, T> {
+impl<T: PixelColor + From<MpicRgb666>> ImageDrawable for Decoder<'_, T> {
     type Color = T;
 
     fn draw<D>(&self, target: &mut D) -> Result<(), D::Error>
@@ -128,9 +144,10 @@ impl<T: PixelColor + From<Rgb>> ImageDrawable for Decoder<'_, T> {
     {
         let mut result = Ok(());
         let _ = self.decode_block(|x8, y8, buf_y, buf_u, buf_v| {
-            let mut colors = [T::from(Rgb::new(0, 0, 0)); 64];
+            let mut colors = [T::from(MpicRgb666::new(0, 0, 0)); 64];
             for index in 0..64 {
-                let rgb = Rgb::from(Yuv666::new(buf_y[index], buf_u[index], buf_v[index]));
+                let rgb =
+                    MpicRgb666::from(MpicYuv666::new(buf_y[index], buf_u[index], buf_v[index]));
                 colors[index] = rgb.into();
             }
             match target.fill_contiguous(

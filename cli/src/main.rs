@@ -9,6 +9,7 @@ use std::{
 
 enum Format {
     MPic,
+    Raw,
     Image(image::ImageFormat),
 }
 
@@ -40,6 +41,7 @@ fn main() {
     let ext = output.extension().expect("unknown file extention");
     let output_format = match ext {
         _ if ext == mpic::PREFERRED_FILE_EXT => Format::MPic,
+        _ if ext == "raw" => Format::Raw,
         _ => {
             Format::Image(image::ImageFormat::from_extension(ext).expect("unknown file extention"))
         }
@@ -53,19 +55,12 @@ fn main() {
         Format::MPic => {
             let decoder = mpic::Decoder::<()>::new(read_data.as_slice()).unwrap();
             let info = decoder.info();
-            let mut raw_image = vec![0xCCu8; info.width() as usize * info.height() as usize * 3];
-            decoder
-                .decode(|x, y, rgb| {
-                    let base = (x as usize + y as usize * info.width() as usize) * 3;
-                    raw_image[base] = rgb.r;
-                    raw_image[base + 1] = rgb.g;
-                    raw_image[base + 2] = rgb.b;
-                })
-                .expect("cannot decode input file");
+            let raw_image = decoder.decode().expect("cannot decode input file");
             image::DynamicImage::ImageRgb8(
                 image::RgbImage::from_raw(info.width(), info.height(), raw_image).unwrap(),
             )
         }
+        Format::Raw => unreachable!(),
     };
 
     {
@@ -87,12 +82,14 @@ fn main() {
             let rgb = dynamic_image.to_rgb8();
             let raw_image = rgb.as_raw();
 
-            let mut output_buf = Vec::new();
-            mpic::Encoder::encode(&raw_image, rgb.width(), rgb.height(), |v| {
-                output_buf.extend_from_slice(v)
-            })
-            .expect("cannot write output");
+            let output_buf = mpic::Encoder::encode(&raw_image, rgb.width(), rgb.height())
+                .expect("cannot write output");
             std::fs::write(&output, output_buf).expect("cannot write output");
+        }
+        Format::Raw => {
+            let rgb = dynamic_image.to_rgb8();
+            let raw_image = rgb.as_raw();
+            std::fs::write(&output, raw_image).expect("cannot write output");
         }
     }
 }

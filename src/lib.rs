@@ -14,6 +14,9 @@ use core::{mem::size_of, slice};
 #[cfg(feature = "embedded")]
 use embedded_graphics::prelude::Size;
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
 mod decode;
 pub use decode::*;
 
@@ -49,8 +52,8 @@ pub struct FileHeader {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ImageInfo {
-    pub width: u16,
-    pub height: u16,
+    width: u16,
+    height: u16,
 }
 
 impl ImageInfo {

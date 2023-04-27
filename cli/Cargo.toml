@@ -7,4 +7,4 @@ version = "0.1.0"
 
 [dependencies]
 image = {}
-mpic = {path = ".."}
+mpic = {path = "..", features=["alloc"]}

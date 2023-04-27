@@ -8,4 +8,4 @@ version = "0.1.0"
 [dependencies]
 embedded-graphics = {}
 embedded-graphics-simulator = {}
-mpic = {path = "..", features = ["embedded"]}
+mpic = {path = "..", features = ["alloc", "embedded"]}
