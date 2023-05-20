@@ -16,8 +16,8 @@ fn main() {
     let decoder = mpic::Decoder::<Rgb565>::new(&data).expect("unexpected file format");
     let image = Image::new(&decoder, Point::new(0, 0));
     let mut display = SimulatorDisplay::<Rgb565>::new(image.bounding_box().size);
-    decoder.draw(&mut display).unwrap();
+    image.draw(&mut display).unwrap();
 
     let output_settings = OutputSettingsBuilder::new().build();
-    Window::new("Image Viewer", &output_settings).show_static(&display);
+    Window::new("mPic Image Viewer", &output_settings).show_static(&display);
 }

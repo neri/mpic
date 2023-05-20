@@ -79,27 +79,67 @@ impl<'a, T> Decoder<'a, T> {
     }
 
     #[allow(dead_code)]
-    fn decode_block<F>(&self, mut draw_block: F) -> Result<(), DecodeError>
+    fn decode_sub_image<F, E>(
+        &self,
+        left: i32,
+        top: i32,
+        width: u32,
+        height: u32,
+        mut draw_block: F,
+    ) -> Result<(), E>
     where
-        F: FnMut(u32, u32, &[u8; 64], &[u8; 64], &[u8; 64]),
+        F: FnMut(u32, u32, &[u8; 64], &[u8; 64], &[u8; 64]) -> Result<(), E>,
     {
         let mut cursor = size_of::<FileHeader>();
-        let width = self.info().width as u32;
-        let height = self.info().height as u32;
-        for y8 in (0..height).step_by(8) {
-            for x8 in (0..width).step_by(8) {
-                let len = *self.blob.get(cursor).ok_or(DecodeError::InvalidData)? as usize;
-                let src = self
-                    .blob
-                    .get(cursor + 1..cursor + len + 1)
-                    .ok_or(DecodeError::InvalidData)?;
-                Self::decode_chunk(src).map(|(buf_y, buf_u, buf_v)| {
-                    draw_block(x8, y8, &buf_y, &buf_u, &buf_v);
-                })?;
+        let image_width = ceil_7(self.info().width as u32);
+        let image_height = ceil_7(self.info().height as u32);
+
+        let mut left = left;
+        let mut top = top;
+        let mut right = left + width as i32;
+        let mut bottom = top + height as i32;
+        if left < 0 {
+            right += left;
+            left = 0;
+        }
+        if top < 0 {
+            bottom += top;
+            top = 0;
+        }
+        let block_left = (left as u32 / 8) * 8;
+        let block_top = (top as u32 / 8) * 8;
+        let block_right = ceil_7(image_width.min(right as u32));
+        let block_bottom = ceil_7(image_height.min(bottom as u32));
+
+        let mut result = Ok(());
+        for y8 in (0..block_bottom).step_by(8) {
+            for x8 in (0..image_width).step_by(8) {
+                let len = match self.blob.get(cursor) {
+                    Some(v) => *v as usize,
+                    None => return result,
+                };
+                if y8 >= block_top && x8 >= block_left && x8 <= block_right {
+                    let src = match self.blob.get(cursor + 1..cursor + len + 1) {
+                        Some(v) => v,
+                        None => return result,
+                    };
+                    match Self::decode_chunk(src).map(|(buf_y, buf_u, buf_v)| {
+                        match draw_block(x8, y8, &buf_y, &buf_u, &buf_v) {
+                            Ok(_) => (),
+                            Err(e) => result = Err(e),
+                        }
+                    }) {
+                        Ok(_) => (),
+                        Err(_) => break,
+                    }
+                    if result.is_err() {
+                        break;
+                    }
+                }
                 cursor += len + 1;
             }
         }
-        Ok(())
+        result
     }
 
     pub fn decode_chunk(src: &[u8]) -> Result<([u8; 64], [u8; 64], [u8; 64]), DecodeError> {
@@ -142,30 +182,31 @@ impl<T: PixelColor + From<MpicRgb666>> ImageDrawable for Decoder<'_, T> {
     where
         D: DrawTarget<Color = Self::Color>,
     {
-        let mut result = Ok(());
-        let _ = self.decode_block(|x8, y8, buf_y, buf_u, buf_v| {
-            let mut colors = [T::from(MpicRgb666::new(0, 0, 0)); 64];
-            for index in 0..64 {
-                let rgb =
-                    MpicRgb666::from(MpicYuv666::new(buf_y[index], buf_u[index], buf_v[index]));
-                colors[index] = rgb.into();
-            }
-            match target.fill_contiguous(
-                &Rectangle::new(Point::new(x8 as i32, y8 as i32), Size::new(8, 8)),
-                colors,
-            ) {
-                Ok(_) => (),
-                Err(e) => result = Err(e),
-            }
-        });
-        result
+        let rect = target.bounding_box();
+        self.decode_sub_image(
+            rect.top_left.x,
+            rect.top_left.y,
+            rect.size.width,
+            rect.size.height,
+            |x8, y8, buf_y, buf_u, buf_v| {
+                let mut colors = [T::from(MpicRgb666::new(0, 0, 0)); 64];
+                for index in 0..64 {
+                    let rgb =
+                        MpicRgb666::from(MpicYuv666::new(buf_y[index], buf_u[index], buf_v[index]));
+                    colors[index] = rgb.into();
+                }
+                target.fill_contiguous(
+                    &Rectangle::new(Point::new(x8 as i32, y8 as i32), Size::new(8, 8)),
+                    colors,
+                )
+            },
+        )
     }
 
     fn draw_sub_image<D>(&self, target: &mut D, area: &Rectangle) -> Result<(), D::Error>
     where
         D: DrawTarget<Color = Self::Color>,
     {
-        // TODO:
         self.draw(&mut target.translated(-area.top_left).clipped(area))
     }
 }
@@ -185,4 +226,8 @@ pub(crate) fn demosaic_uv(data: &[u8; 16]) -> [u8; 64] {
         }
     }
     buf
+}
+
+fn ceil_7(v: u32) -> u32 {
+    ((v + 7) / 8) * 8
 }
