@@ -78,6 +78,44 @@ impl<'a, T> Decoder<'a, T> {
         Ok(())
     }
 
+    #[cfg(feature = "alloc")]
+    pub fn decode_rgba(&self) -> Result<alloc::vec::Vec<u8>, DecodeError> {
+        let width = self.info().width() as usize;
+        let height = self.info().height() as usize;
+        let vec_size = width * height * 4;
+        let mut vec = alloc::vec::Vec::with_capacity(vec_size);
+        vec.resize(vec_size, 0);
+
+        let mut cursor = size_of::<FileHeader>();
+        for y8 in (0..height).step_by(8) {
+            for x8 in (0..width).step_by(8) {
+                let len = *self.blob.get(cursor).ok_or(DecodeError::InvalidData)? as usize;
+                let src = self
+                    .blob
+                    .get(cursor + 1..cursor + len + 1)
+                    .ok_or(DecodeError::InvalidData)?;
+                Self::decode_chunk(src).map(|(buf_y, buf_u, buf_v)| {
+                    for y7 in 0..8 {
+                        for x7 in 0..8 {
+                            let y = buf_y[(y7 * 8 + x7) as usize];
+                            let u = buf_u[(y7 * 8 + x7) as usize];
+                            let v = buf_v[(y7 * 8 + x7) as usize];
+                            let rgb = MpicRgb666::from_yuv(MpicYuv666::new(y, u, v));
+
+                            let index = (x8 + x7 + (y8 + y7) * width) * 4;
+                            vec[index] = rgb.r8();
+                            vec[index + 1] = rgb.g8();
+                            vec[index + 2] = rgb.b8();
+                            vec[index + 3] = u8::MAX;
+                        }
+                    }
+                })?;
+                cursor += len + 1;
+            }
+        }
+        Ok(vec)
+    }
+
     #[allow(dead_code)]
     fn decode_sub_image<F, E>(
         &self,
@@ -228,6 +266,7 @@ pub(crate) fn demosaic_uv(data: &[u8; 16]) -> [u8; 64] {
     buf
 }
 
-fn ceil_7(v: u32) -> u32 {
+#[inline]
+const fn ceil_7(v: u32) -> u32 {
     ((v + 7) / 8) * 8
 }
