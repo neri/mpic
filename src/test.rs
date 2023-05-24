@@ -142,34 +142,82 @@ test_compress!(
     is_not_compressed
 );
 
-test_compress!(
-    compress_ordered_triple_not_compressed,
-    {
-        let mut source = Vec::<u8, 96>::new();
-        for i in 0..96 {
-            source.push(i / 3).unwrap();
-        }
-        source
-    },
-    is_not_compressed
-);
+test_compress!(compress_ordered_3_compressed, {
+    let mut source = Vec::<u8, 96>::new();
+    for i in 0..96 {
+        source.push(i / 3).unwrap();
+    }
+    source
+});
 
-test_compress!(
-    compress_ordered_quadruple_not_compressed,
-    {
-        let mut source = Vec::<u8, 96>::new();
-        for i in 0..96 {
-            source.push(i / 4).unwrap();
-        }
-        source
-    },
-    is_not_compressed
-);
+test_compress!(compress_ordered_4_compressed, {
+    let mut source = Vec::<u8, 96>::new();
+    for i in 0..96 {
+        source.push(i / 4).unwrap();
+    }
+    source
+});
 
-test_compress!(compress_ordered_quintuple_compressed, {
+test_compress!(compress_ordered_5_compressed, {
     let mut source = Vec::<u8, 96>::new();
     for i in 0..96 {
         source.push(i / 5).unwrap();
+    }
+    source
+});
+
+test_compress!(compress_ordered_6_compressed, {
+    let mut source = Vec::<u8, 96>::new();
+    for i in 0..96 {
+        source.push(i / 6).unwrap();
+    }
+    source
+});
+
+test_compress!(compress_ordered_7_compressed, {
+    let mut source = Vec::<u8, 96>::new();
+    for i in 0..96 {
+        source.push(i / 7).unwrap();
+    }
+    source
+});
+
+test_compress!(compress_ordered_8_compressed, {
+    let mut source = Vec::<u8, 96>::new();
+    for i in 0..96 {
+        source.push(i / 8).unwrap();
+    }
+    source
+});
+
+test_compress!(compress_ordered_16_compressed, {
+    let mut source = Vec::<u8, 96>::new();
+    for i in 0..96 {
+        source.push(i / 16).unwrap();
+    }
+    source
+});
+
+test_compress!(compress_ordered_24_compressed, {
+    let mut source = Vec::<u8, 96>::new();
+    for i in 0..96 {
+        source.push(i / 24).unwrap();
+    }
+    source
+});
+
+test_compress!(compress_ordered_32_compressed, {
+    let mut source = Vec::<u8, 96>::new();
+    for i in 0..96 {
+        source.push(i / 32).unwrap();
+    }
+    source
+});
+
+test_compress!(compress_ordered_48_compressed, {
+    let mut source = Vec::<u8, 96>::new();
+    for i in 0..96 {
+        source.push(i / 48).unwrap();
     }
     source
 });
@@ -190,6 +238,21 @@ test_compress!(compress_repeat_4, {
         source.push(0x2A).unwrap();
         source.push(0x0C).unwrap();
         source.push(0x33).unwrap();
+    }
+    source
+});
+
+test_compress!(compress_repeat_8, {
+    let mut source = Vec::<u8, 96>::new();
+    for _ in 0..12 {
+        source.push(0x15).unwrap();
+        source.push(0x2A).unwrap();
+        source.push(0x0C).unwrap();
+        source.push(0x33).unwrap();
+        source.push(0x0F).unwrap();
+        source.push(0x30).unwrap();
+        source.push(0x14).unwrap();
+        source.push(0x28).unwrap();
     }
     source
 });

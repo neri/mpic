@@ -14,21 +14,31 @@ pub(crate) fn compress(src: &[u8; UNCOMPRESSED_SIZE], output: &mut Vec<u8, 128>)
     let mut cursor = 0;
     while let Some(current) = src.get(cursor) {
         cursor += {
-            let min_len = 3;
-            let max_len = 64;
+            let min_short_len = 2;
+            let max_short_len = 3 + min_short_len;
+            let max_short_slide = 32;
+            let min_long_len = 3;
+            let max_long_len = 63 + min_long_len;
             let max_slide = 64;
             let mut matches = (0, 0);
+
             for slide in 1..=cursor.min(max_slide) {
-                let len = check_len(src, cursor, cursor - slide).min(max_len);
+                let len = check_len(src, cursor, cursor - slide).min(max_long_len);
                 if matches.0 < len {
                     matches = (len, slide);
                 }
             }
-            if matches.0 >= min_len {
-                let len = matches.0;
-                let slide = matches.1;
-                output.push(0x40 | (len - min_len) as u8).unwrap();
-                output.push(slide as u8 - 1).unwrap();
+
+            let len = matches.0;
+            let encoded_slide = matches.1 as u8;
+            if len <= max_short_len && len >= min_short_len && encoded_slide <= max_short_slide {
+                output
+                    .push(0x80 | (((len - min_short_len) as u8) << 5) | (encoded_slide - 1))
+                    .unwrap();
+                len
+            } else if len >= min_long_len {
+                output.push(0x40 | (len - min_long_len) as u8).unwrap();
+                output.push(encoded_slide - 1).unwrap();
                 len
             } else {
                 output.push(*current).unwrap();
@@ -85,14 +95,18 @@ pub(crate) fn decompress(src: &[u8], output: &mut Vec<u8, UNCOMPRESSED_SIZE>) ->
             let data = *src.get(cursor)?;
             match data {
                 0b0000_0000..=0b0011_1111 => {
-                    // raw value
+                    // 00vv_vvvv raw value
                     output.push(data & 0x3F).ok()?;
                 }
                 0b0100_0000..=0b0111_1111 => {
-                    // slide
+                    // 01nn_nnnn 00mm_mmmm slide long
                     let slen = (data & 0x3F) as usize + 3;
                     let slide = *src.get(cursor + 1)?;
-                    let slide = (slide & 0x7F) as usize + 1;
+                    if (slide & 0xC0) != 0 {
+                        // RESERVED
+                        return None;
+                    }
+                    let slide = slide as usize + 1;
                     if output.len() < slide || output.len() + slen > UNCOMPRESSED_SIZE {
                         return None;
                     }
@@ -104,8 +118,17 @@ pub(crate) fn decompress(src: &[u8], output: &mut Vec<u8, UNCOMPRESSED_SIZE>) ->
                     cursor += 1;
                 }
                 0b1000_0000..=0b1111_1111 => {
-                    // reserved
-                    return None;
+                    // 1nnm_mmmm slide short
+                    let slen = 2 + ((data & 0x60) as usize >> 5);
+                    let slide = (data & 0x1F) as usize + 1;
+                    if output.len() < slide || output.len() + slen > UNCOMPRESSED_SIZE {
+                        return None;
+                    }
+                    let base = output.len() - slide;
+                    for i in 0..slen {
+                        let v = *output.get(base + i)?;
+                        output.push(v).ok()?;
+                    }
                 }
             }
             cursor += 1;

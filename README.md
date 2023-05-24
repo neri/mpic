@@ -53,19 +53,19 @@ $ cargo run -p viewer FILE_NAME
 | Mandrill              | Original Size | Converted PNG Size |                              |
 | --------------------- | ------------- | ------------------ | ---------------------------- |
 | Original 24bit Bitmap | 197KB         | 155KB              | ![](images/Mandrill-org.png) |
-| MPIC                  | 75KB          | 135KB              | ![](images/Mandrill.png)     |
+| MPIC                  | 72KB          | 135KB              | ![](images/Mandrill.png)     |
 | JPEG                  | 40KB          | -                  | ![](images/Mandrill.jpeg)    |
 
 | Parrots               | Original Size | Converted PNG Size |                             |
 | --------------------- | ------------- | ------------------ | --------------------------- |
 | Original 24bit Bitmap | 197KB         | 105KB              | ![](images/Parrots-org.png) |
-| MPIC                  | 59KB          | 87KB               | ![](images/Parrots.png)     |
+| MPIC                  | 49KB          | 87KB               | ![](images/Parrots.png)     |
 | JPEG                  | 21KB          | -                  | ![](images/Parrots.jpeg)    |
 
 | Pepper                | Original Size | Converted PNG Size |                            |
 | --------------------- | ------------- | ------------------ | -------------------------- |
 | Original 24bit Bitmap | 197KB         | 117KB              | ![](images/Pepper-org.png) |
-| MPIC                  | 69KB          | 105KB              | ![](images/Pepper.png)     |
+| MPIC                  | 58KB          | 105KB              | ![](images/Pepper.png)     |
 | JPEG                  | 28KB          | -                  | ![](images/Pepper.jpeg)    |
 
 ## File Format
@@ -100,8 +100,9 @@ pub struct FileHeader {
 | Representation          | Meaning                                                                                                             |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `00vv_vvvv`             | Raw Value                                                                                                           |
-| `01nn_nnnn` `0mmm_mmmm` | Together with the trailing byte value, it indicates the length `(n+3)` and offset `-(m+1)` of the slide dictionary. |
-| `1xxx_xxxx`             | Reserved                                                                                                            |
+| `01nn_nnnn` `00mm_mmmm` | Together with the trailing byte value, it indicates the length `(n+3)` and offset `-(m+1)` of the slide dictionary. |
+| `01xx_xxxx` `NNxx_xxxx` | RESERVED (NN!=00)                                                                                                   |
+| `1nnm_mmmm`             | Short form of sliding dictionary, it indicates the length `(n+2)` and offset `-(m+1)`.                              |
 
 ----
 
