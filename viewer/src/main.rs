@@ -14,8 +14,17 @@ fn main() {
     file.read_to_end(&mut data).expect("file cannot read");
 
     let decoder = mpic::Decoder::<Rgb565>::new(&data).expect("unexpected file format");
-    let image = Image::new(&decoder, Point::new(0, 0));
-    let mut display = SimulatorDisplay::<Rgb565>::new(image.bounding_box().size);
+    let image_size = decoder.size();
+    let window_size = Size::new(
+        64.max(image_size.width + 16),
+        64.max(image_size.height + 16),
+    );
+    let padding = Point::new(
+        (window_size.width - image_size.width) as i32 / 2,
+        (window_size.height - image_size.height) as i32 / 2,
+    );
+    let image = Image::new(&decoder, padding);
+    let mut display = SimulatorDisplay::<Rgb565>::new(window_size);
     image.draw(&mut display).unwrap();
 
     let output_settings = OutputSettingsBuilder::new().build();
