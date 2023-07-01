@@ -49,9 +49,14 @@ impl<'a, T> Decoder<'a, T> {
             return Err(DecodeError::InvalidInput);
         }
 
+        let w8 = width & !7;
+        let h8 = height & !7;
+        let w7 = width & 7;
+        let h7 = height & 7;
+
         let mut cursor = size_of::<FileHeader>();
-        for y8 in (0..height).step_by(8) {
-            for x8 in (0..width).step_by(8) {
+        for y8 in (0..h8).step_by(8) {
+            for x8 in (0..w8).step_by(8) {
                 let len = *self.blob.get(cursor).ok_or(DecodeError::InvalidData)? as usize;
                 let src = self
                     .blob
@@ -74,8 +79,54 @@ impl<'a, T> Decoder<'a, T> {
                 })?;
                 cursor += len + 1;
             }
+            if w7 > 0 {
+                cursor += self._decode_edge(output, cursor, width, w8, y8, w7, 8)?;
+            }
+        }
+        if h7 > 0 {
+            for x8 in (0..w8).step_by(8) {
+                cursor += self._decode_edge(output, cursor, width, x8, w8, 8, h7)?;
+            }
+            if w7 > 0 {
+                self._decode_edge(output, cursor, width, w8, h8, w7, h7)?;
+            }
         }
         Ok(())
+    }
+
+    #[inline]
+    fn _decode_edge(
+        &self,
+        output: &mut [u8],
+        cursor: usize,
+        width: usize,
+        x8: usize,
+        y8: usize,
+        w7: usize,
+        h7: usize,
+    ) -> Result<usize, DecodeError> {
+        let len = *self.blob.get(cursor).ok_or(DecodeError::InvalidData)? as usize;
+        let src = self
+            .blob
+            .get(cursor + 1..cursor + len + 1)
+            .ok_or(DecodeError::InvalidData)?;
+        Self::decode_chunk(src).map(|(buf_y, buf_u, buf_v)| {
+            for y7 in 0..h7 {
+                for x7 in 0..w7 {
+                    let y = buf_y[(y7 * 8 + x7) as usize];
+                    let u = buf_u[(y7 * 8 + x7) as usize];
+                    let v = buf_v[(y7 * 8 + x7) as usize];
+                    let rgb = MpicRgb666::from_yuv(MpicYuv666::new(y, u, v));
+
+                    let index = (x8 + x7 + (y8 + y7) * width) * 3;
+                    output[index] = rgb.r8();
+                    output[index + 1] = rgb.g8();
+                    output[index + 2] = rgb.b8();
+                }
+            }
+        })?;
+
+        Ok(len + 1)
     }
 
     #[cfg(feature = "alloc")]
@@ -86,9 +137,14 @@ impl<'a, T> Decoder<'a, T> {
         let mut vec = alloc::vec::Vec::with_capacity(vec_size);
         vec.resize(vec_size, 0);
 
+        let w8 = width & !7;
+        let h8 = height & !7;
+        let w7 = width & 7;
+        let h7 = height & 7;
+
         let mut cursor = size_of::<FileHeader>();
-        for y8 in (0..height).step_by(8) {
-            for x8 in (0..width).step_by(8) {
+        for y8 in (0..h8).step_by(8) {
+            for x8 in (0..w8).step_by(8) {
                 let len = *self.blob.get(cursor).ok_or(DecodeError::InvalidData)? as usize;
                 let src = self
                     .blob
@@ -112,8 +168,57 @@ impl<'a, T> Decoder<'a, T> {
                 })?;
                 cursor += len + 1;
             }
+            if w7 > 0 {
+                cursor +=
+                    self._decode_edge_rgba(vec.as_mut_slice(), cursor, width, w8, y8, w7, 8)?;
+            }
         }
+        if h7 > 0 {
+            for x8 in (0..w8).step_by(8) {
+                cursor +=
+                    self._decode_edge_rgba(vec.as_mut_slice(), cursor, width, x8, h8, 8, h7)?;
+            }
+            if w7 > 0 {
+                self._decode_edge_rgba(vec.as_mut_slice(), cursor, width, w8, h8, w7, h7)?;
+            }
+        }
+
         Ok(vec)
+    }
+
+    fn _decode_edge_rgba(
+        &self,
+        output: &mut [u8],
+        cursor: usize,
+        width: usize,
+        x8: usize,
+        y8: usize,
+        w7: usize,
+        h7: usize,
+    ) -> Result<usize, DecodeError> {
+        let len = *self.blob.get(cursor).ok_or(DecodeError::InvalidData)? as usize;
+        let src = self
+            .blob
+            .get(cursor + 1..cursor + len + 1)
+            .ok_or(DecodeError::InvalidData)?;
+        Self::decode_chunk(src).map(|(buf_y, buf_u, buf_v)| {
+            for y7 in 0..h7 {
+                for x7 in 0..w7 {
+                    let y = buf_y[(y7 * 8 + x7) as usize];
+                    let u = buf_u[(y7 * 8 + x7) as usize];
+                    let v = buf_v[(y7 * 8 + x7) as usize];
+                    let rgb = MpicRgb666::from_yuv(MpicYuv666::new(y, u, v));
+
+                    let index = (x8 + x7 + (y8 + y7) * width) * 4;
+                    output[index] = rgb.r8();
+                    output[index + 1] = rgb.g8();
+                    output[index + 2] = rgb.b8();
+                    output[index + 3] = u8::MAX;
+                }
+            }
+        })?;
+
+        Ok(len + 1)
     }
 
     #[allow(dead_code)]
@@ -126,11 +231,11 @@ impl<'a, T> Decoder<'a, T> {
         mut draw_block: F,
     ) -> Result<(), E>
     where
-        F: FnMut(u32, u32, &[u8; 64], &[u8; 64], &[u8; 64]) -> Result<(), E>,
+        F: FnMut(u32, u32, u32, u32, &[u8; 64], &[u8; 64], &[u8; 64]) -> Result<(), E>,
     {
         let mut cursor = size_of::<FileHeader>();
-        let image_width = ceil_7(self.info().width as u32);
-        let image_height = ceil_7(self.info().height as u32);
+        let image_width = self.info().width();
+        let image_height = self.info().height();
 
         let mut left = left;
         let mut top = top;
@@ -144,13 +249,18 @@ impl<'a, T> Decoder<'a, T> {
             bottom += top;
             top = 0;
         }
-        let block_left = (left as u32 / 8) * 8;
-        let block_top = (top as u32 / 8) * 8;
-        let block_right = ceil_7(image_width.min(right as u32));
-        let block_bottom = ceil_7(image_height.min(bottom as u32));
+        let right = image_width.min(right as u32);
+        let bottom = image_height.min(bottom as u32);
+        let w8 = right & !7;
+        let h8 = bottom & !7;
+        let block_right = ceil_8(right);
+        let block_bottom = ceil_8(bottom);
+        let block_left = left as u32 & !7;
+        let block_top = top as u32 & !7;
 
         let mut result = Ok(());
         for y8 in (0..block_bottom).step_by(8) {
+            let h7 = if y8 == h8 { bottom & 7 } else { 8 };
             for x8 in (0..image_width).step_by(8) {
                 let len = match self.blob.get(cursor) {
                     Some(v) => *v as usize,
@@ -161,8 +271,9 @@ impl<'a, T> Decoder<'a, T> {
                         Some(v) => v,
                         None => return result,
                     };
+                    let w7 = if x8 == w8 { right & 7 } else { 8 };
                     match Self::decode_chunk(src).map(|(buf_y, buf_u, buf_v)| {
-                        match draw_block(x8, y8, &buf_y, &buf_u, &buf_v) {
+                        match draw_block(x8, y8, w7, h7, &buf_y, &buf_u, &buf_v) {
                             Ok(_) => (),
                             Err(e) => result = Err(e),
                         }
@@ -226,15 +337,32 @@ impl<T: PixelColor + From<MpicRgb666>> ImageDrawable for Decoder<'_, T> {
             rect.top_left.y,
             rect.size.width,
             rect.size.height,
-            |x8, y8, buf_y, buf_u, buf_v| {
-                let mut colors = [T::from(MpicRgb666::new(0, 0, 0)); 64];
-                for index in 0..64 {
-                    let rgb =
-                        MpicRgb666::from(MpicYuv666::new(buf_y[index], buf_u[index], buf_v[index]));
-                    colors[index] = rgb.into();
+            |x8, y8, w7, h7, buf_y, buf_u, buf_v| {
+                let mut colors = heapless::Vec::<T, 64>::new();
+                if w7 == 8 && h7 == 8 {
+                    for index in 0..64 {
+                        let rgb = MpicRgb666::from(MpicYuv666::new(
+                            buf_y[index],
+                            buf_u[index],
+                            buf_v[index],
+                        ));
+                        let _ = colors.push(rgb.into());
+                    }
+                } else {
+                    for y7 in 0..h7 {
+                        for x7 in 0..w7 {
+                            let index = (y7 * 8 + x7) as usize;
+                            let rgb = MpicRgb666::from(MpicYuv666::new(
+                                buf_y[index],
+                                buf_u[index],
+                                buf_v[index],
+                            ));
+                            let _ = colors.push(rgb.into());
+                        }
+                    }
                 }
                 target.fill_contiguous(
-                    &Rectangle::new(Point::new(x8 as i32, y8 as i32), Size::new(8, 8)),
+                    &Rectangle::new(Point::new(x8 as i32, y8 as i32), Size::new(w7, h7)),
                     colors,
                 )
             },
@@ -266,7 +394,7 @@ pub(crate) fn demosaic_uv(data: &[u8; 16]) -> [u8; 64] {
     buf
 }
 
-#[inline]
-const fn ceil_7(v: u32) -> u32 {
-    ((v + 7) / 8) * 8
+#[inline(always)]
+const fn ceil_8(v: u32) -> u32 {
+    (v + 7) & !7
 }

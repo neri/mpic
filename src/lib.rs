@@ -86,22 +86,22 @@ impl FileHeader {
 
     pub const MAGIC: [u8; 4] = *b"\x00mpi";
 
-    pub const VER_CURRENT: u8 = 0;
+    pub const VER_ZERO: u8 = 0;
+    pub const VER_CURRENT: u8 = 1;
 
     #[inline]
     pub const fn new(width: u32, height: u32) -> Option<Self> {
-        if width == 0
-            || width >= 0x10000
-            || (width & 7) != 0
-            || height == 0
-            || height >= 0x10000
-            || (height & 7) != 0
-        {
+        if width == 0 || width > 0xFFFF || height == 0 || height > 0xFFFF {
             return None;
         }
+        let version = if (width & 7) == 0 && (height & 7) == 0 {
+            Self::VER_ZERO
+        } else {
+            Self::VER_CURRENT
+        };
         Some(Self {
             magic: Self::MAGIC,
-            version: Self::VER_CURRENT,
+            version,
             width: (width as u16).to_le(),
             height: (height as u16).to_le(),
         })
@@ -112,11 +112,9 @@ impl FileHeader {
         let width = self.width.to_le();
         let height = self.height.to_le();
         self.magic == Self::MAGIC
-            && self.version == Self::VER_CURRENT
+            && (Self::VER_ZERO..=Self::VER_CURRENT).contains(&self.version)
             && width > 0
-            && (width & 7) == 0
             && height > 0
-            && (height & 7) == 0
     }
 
     #[inline]
