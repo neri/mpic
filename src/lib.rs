@@ -7,6 +7,11 @@
 //! - Small memory footprint, only a few hundred bytes of stack memory required for decoding.
 //! - Designed for 16bpp color images and supports `embedded-graphics`; add `features = ["embedded"]` to Cargo.toml.
 //! - Support for `no_std`, No `alloc` is needed for decoding.
+//!
+//! ## More information
+//!
+//! - See detail: <https://github.com/neri/mpic>
+//!
 
 #![cfg_attr(not(test), no_std)]
 
