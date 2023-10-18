@@ -80,15 +80,20 @@ pub struct FileHeader {
     magic: [u8; 4], // b"\x00mpi"
     width: u16,
     height: u16,
-    version: u8,    // must be zero
+    version: u8,    // The current version is 1.
 }
 ```
 
-- At this time, only multiples of 8 are allowed for `width` and `height`.
+#### Differences between versions
+
+- In version `0`, only multiples of 8 are allowed for `width` and `height`.
+- There is no limit to image size in version `1` or later.
+
 
 ### Chunk Data
 
 - Image data is divided into 8 x 8 blocks and stored in chunks.
+- If the image size is not a multiple of 8 x 8, the right and bottom edges are filled with a color interpolated from the surroundings to match a multiple of 8.
 - Number of Chunks = ceil(`width` / 8) * ceil(`height` / 8)
 - For uncompressed chunks, the data size (96), followed by the 64-byte Y channel, 16-byte U channel, and 16-byte V channel. `96` also serves as an identifier for uncompressed data.
 - The Y channel stores all 8x8 data, while the U and V channels store only 4x4 pixels. The method of thinning the U and V channels is left to the encoder. The decoder should use nearest-neighbor interpolation to expand them by a factor of 2 in height and width.
