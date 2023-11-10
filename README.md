@@ -14,6 +14,7 @@ Simple Lossy Compression Image Format for Embedded Platforms
 - Small memory footprint, only a few hundred bytes of stack memory required for decoding.
 - Designed for 16bpp color images and supports `embedded-graphics`; add `features = ["embedded"]` to Cargo.toml.
 - Support for `no_std`, No `alloc` is needed for decoding.
+- A typical image compression ratio is somewhere between PNG and JPG.
 
 ## Example Apps
 
@@ -99,6 +100,37 @@ pub struct FileHeader {
 - The Y channel stores all 8x8 data, while the U and V channels store only 4x4 pixels. The method of thinning the U and V channels is left to the encoder. The decoder should use nearest-neighbor interpolation to expand them by a factor of 2 in height and width.
 - For a 6-bit compacted chunk, the data size is `72`. The order of the data is the same as for the uncompressed chunk, but the 6 bits of the uncompressed chunk are compacted into 8 bits, so the data size is 3/4 of the uncompressed chunk.
 - If the data size after compression exceeds 72 with other compression methods, the 6-bit compaction method shall be selected.
+
+### Color Conversion Methods
+
+* RGB888 to YUV666
+
+```
+    y = ((66 * r + 129 * g + 25 * b + 128) >> 10) + 4;
+
+    u = (((-38 * r - 74 * g + 112 * b + 128) / 256) + 128) >> 2;
+
+    v = (((112 * r - 94 * g - 18 * b + 128) / 256) + 128) >> 2;
+```
+
+* YUV666 to RGB666
+
+```
+fn u6_to_u8(val) {
+    (val << 2) | (val >> 4)
+}
+
+    y = u6_to_u8(y - 4);
+    u = (u6_to_u8(u) - 128);
+    v = (u6_to_u8(v) - 128);
+
+    r = ((298 * y + 409 * v + 128) >> 10).clamp(0, 63);
+
+    g = ((298 * y - 100 * u - 208 * v + 128) >> 10).clamp(0, 63);
+
+    b = ((298 * y + 516 * u + 128) >> 10).clamp(0, 63);
+```
+
 
 ### LZ Compression Data Encoding
 
