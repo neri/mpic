@@ -14,6 +14,7 @@ Simple Lossy Compression Image Format for Embedded Platforms
 - Small memory footprint, only a few hundred bytes of stack memory required for decoding.
 - Designed for 16bpp color images and supports `embedded-graphics`; add `features = ["embedded"]` to Cargo.toml.
 - Support for `no_std`, No `alloc` is needed for decoding.
+- A typical image compression ratio is somewhere between PNG and JPG.
 
 ## Example Apps
 
@@ -80,20 +81,56 @@ pub struct FileHeader {
     magic: [u8; 4], // b"\x00mpi"
     width: u16,
     height: u16,
-    version: u8,    // must be zero
+    version: u8,    // The current version is 1.
 }
 ```
 
-- At this time, only multiples of 8 are allowed for `width` and `height`.
+#### Differences between versions
+
+- In version `0`, only multiples of 8 are allowed for `width` and `height`.
+- There is no limit to image size in version `1` or later.
+
 
 ### Chunk Data
 
 - Image data is divided into 8 x 8 blocks and stored in chunks.
+- If the image size is not a multiple of 8 x 8, the right and bottom edges are filled with a color interpolated from the surroundings to match a multiple of 8.
 - Number of Chunks = ceil(`width` / 8) * ceil(`height` / 8)
 - For uncompressed chunks, the data size (96), followed by the 64-byte Y channel, 16-byte U channel, and 16-byte V channel. `96` also serves as an identifier for uncompressed data.
 - The Y channel stores all 8x8 data, while the U and V channels store only 4x4 pixels. The method of thinning the U and V channels is left to the encoder. The decoder should use nearest-neighbor interpolation to expand them by a factor of 2 in height and width.
 - For a 6-bit compacted chunk, the data size is `72`. The order of the data is the same as for the uncompressed chunk, but the 6 bits of the uncompressed chunk are compacted into 8 bits, so the data size is 3/4 of the uncompressed chunk.
 - If the data size after compression exceeds 72 with other compression methods, the 6-bit compaction method shall be selected.
+
+### Color Conversion Methods
+
+* RGB888 to YUV666
+
+```
+    y = ((66 * r + 129 * g + 25 * b + 128) >> 10) + 4;
+
+    u = (((-38 * r - 74 * g + 112 * b + 128) / 256) + 128) >> 2;
+
+    v = (((112 * r - 94 * g - 18 * b + 128) / 256) + 128) >> 2;
+```
+
+* YUV666 to RGB666
+
+```
+fn u6_to_u8(val) {
+    (val << 2) | (val >> 4)
+}
+
+    y = u6_to_u8(y - 4);
+    u = (u6_to_u8(u) - 128);
+    v = (u6_to_u8(v) - 128);
+
+    r = ((298 * y + 409 * v + 128) >> 10).clamp(0, 63);
+
+    g = ((298 * y - 100 * u - 208 * v + 128) >> 10).clamp(0, 63);
+
+    b = ((298 * y + 516 * u + 128) >> 10).clamp(0, 63);
+```
+
 
 ### LZ Compression Data Encoding
 
