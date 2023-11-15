@@ -11,10 +11,10 @@ Simple Lossy Compression Image Format for Embedded Platforms
 
 - Simple.
 - Lossy compression.
+- A typical image compression ratio is somewhere between PNG and JPG.
 - Small memory footprint, only a few hundred bytes of stack memory required for decoding.
 - Designed for 16bpp color images and supports `embedded-graphics`; add `features = ["embedded"]` to Cargo.toml.
 - Support for `no_std`, No `alloc` is needed for decoding.
-- A typical image compression ratio is somewhere between PNG and JPG.
 
 ## Example Apps
 
