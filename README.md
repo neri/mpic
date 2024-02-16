@@ -118,7 +118,7 @@ pub struct FileHeader {
     v = (((112 * r - 94 * g - 18 * b + 128) / 256) + 128) >> 2;
 ```
 
-* YUV666 to RGB666
+* YUV666 to RGB666 or RGB888
 
 ```
 fn u6_to_u8(val) {
@@ -129,13 +129,14 @@ fn u6_to_u8(val) {
     u = (u6_to_u8(u) - 128);
     v = (u6_to_u8(v) - 128);
 
-    r = ((298 * y + 409 * v + 128) >> 10).clamp(0, 63);
+    r6 = ((298 * y + 409 * v + 128) >> 10).clamp(0, 63);
+    g6 = ((298 * y - 100 * u - 208 * v + 128) >> 10).clamp(0, 63);
+    b6 = ((298 * y + 516 * u + 128) >> 10).clamp(0, 63);
 
-    g = ((298 * y - 100 * u - 208 * v + 128) >> 10).clamp(0, 63);
-
-    b = ((298 * y + 516 * u + 128) >> 10).clamp(0, 63);
+    r8 = u6_to_u8(r6)
+    g8 = u6_to_u8(g6)
+    b8 = u6_to_u8(b6)
 ```
-
 
 ### LZ Compression Data Encoding
 
