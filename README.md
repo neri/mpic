@@ -91,12 +91,17 @@ pub struct FileHeader {
 - There is no limit to image size in version `1` or later.
 
 
-### Chunk Data
+### Image Data
 
+- Image data follows the header.
 - Image data is divided into 8 x 8 blocks and stored in chunks.
 - If the image size is not a multiple of 8 x 8, the right and bottom edges are filled with a color interpolated from the surroundings to match a multiple of 8.
 - Number of Chunks = ceil(`width` / 8) * ceil(`height` / 8)
-- For uncompressed chunks, the data size (96), followed by the 64-byte Y channel, 16-byte U channel, and 16-byte V channel. `96` also serves as an identifier for uncompressed data.
+
+### Chunk
+
+- The first byte of each chunk of data indicates the data size, followed by the payload. The chunk size also indicates how the chunks are compressed.
+- For uncompressed chunks, the data size (96), followed by the 64-byte Y channel, 16-byte U channel, and 16-byte V channel. `96` also serves as an identifier for uncompressed data. In practice, normal encoders do not use this mode.
 - The Y channel stores all 8x8 data, while the U and V channels store only 4x4 pixels. The method of thinning the U and V channels is left to the encoder. The decoder should use nearest-neighbor interpolation to expand them by a factor of 2 in height and width.
 - For a 6-bit compacted chunk, the data size is `72`. The order of the data is the same as for the uncompressed chunk, but the 6 bits of the uncompressed chunk are compacted into 8 bits, so the data size is 3/4 of the uncompressed chunk.
 - If the data size after compression exceeds 72 with other compression methods, the 6-bit compaction method shall be selected.
