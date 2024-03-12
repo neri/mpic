@@ -5,7 +5,7 @@ Simple Lossy Compression Image Format for Embedded Platforms
 ![](images/img_3246.jpg)
 
 - [Repository](https://github.com/neri/mpic)
-- [Online Documents](https://neri.github.io/mpic/mpic/)
+- [Online API Documents](https://neri.github.io/mpic/mpic/)
 
 ## Features
 

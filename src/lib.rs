@@ -4,6 +4,7 @@
 //!
 //! - Simple.
 //! - Lossy compression.
+//! - A typical image compression ratio is somewhere between PNG and JPG.
 //! - Small memory footprint, only a few hundred bytes of stack memory required for decoding.
 //! - Designed for 16bpp color images and supports `embedded-graphics`; add `features = ["embedded"]` to Cargo.toml.
 //! - Support for `no_std`, No `alloc` is needed for decoding.
@@ -52,7 +53,7 @@ pub struct FileHeader {
     magic: [u8; 4],
     width: u16,
     height: u16,
-    version: u8,
+    version: Version,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -86,18 +87,15 @@ impl FileHeader {
 
     pub const MAGIC: [u8; 4] = *b"\x00mpi";
 
-    pub const VER_ZERO: u8 = 0;
-    pub const VER_CURRENT: u8 = 1;
-
     #[inline]
     pub const fn new(width: u32, height: u32) -> Option<Self> {
         if width == 0 || width > 0xFFFF || height == 0 || height > 0xFFFF {
             return None;
         }
         let version = if (width & 7) == 0 && (height & 7) == 0 {
-            Self::VER_ZERO
+            Version::V0
         } else {
-            Self::VER_CURRENT
+            Version::V1
         };
         Some(Self {
             magic: Self::MAGIC,
@@ -112,7 +110,7 @@ impl FileHeader {
         let width = self.width.to_le();
         let height = self.height.to_le();
         self.magic == Self::MAGIC
-            && (Self::VER_ZERO..=Self::VER_CURRENT).contains(&self.version)
+            && (Version::V0..=Version::CURRENT).contains(&self.version)
             && width > 0
             && height > 0
     }
@@ -138,4 +136,20 @@ impl FileHeader {
             height: self.height.to_le(),
         }
     }
+
+    #[inline]
+    pub const fn version(&self) -> Version {
+        self.version
+    }
+}
+
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Version(pub u8);
+
+impl Version {
+    pub const CURRENT: Self = Self::V1;
+
+    pub const V0: Self = Self(0);
+    pub const V1: Self = Self(1);
 }
