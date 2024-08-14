@@ -28,8 +28,8 @@ embedded = ["embedded-graphics"]
 std = ["alloc"]
 
 [dependencies]
-embedded-graphics = { version = "0.7.1", optional = true }
-heapless = "0.7.16"
+embedded-graphics = { version = "0.8.1", optional = true }
+heapless = { version = "0.8.0"}
 
 [workspace]
 members = [
