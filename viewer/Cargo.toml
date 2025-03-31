@@ -1,5 +1,5 @@
 [package]
-edition = "2021"
+edition = "2024"
 name = "viewer"
 version = "0.1.0"
 
@@ -7,5 +7,5 @@ version = "0.1.0"
 
 [dependencies]
 embedded-graphics = { version = "0.8.1" }
-embedded-graphics-simulator = { version = "0.6.0" }
+embedded-graphics-simulator = { version = "0.7.0" }
 mpic = {path = "..", features = ["alloc", "embedded"]}

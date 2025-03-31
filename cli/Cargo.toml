@@ -1,10 +1,10 @@
 [package]
-edition = "2021"
+edition = "2024"
 name = "cli"
 version = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-image = { version = "0.25.2" }
+image = { version = "0.25.6" }
 mpic = {path = "..", features=["alloc"]}
