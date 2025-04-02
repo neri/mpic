@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["PREFERRED_FILE_EXT"],"enum":["DecodeError","EncodeError"],"mod":["color"],"struct":["Decoder","Encoder","FileHeader","ImageInfo","Version"]};
