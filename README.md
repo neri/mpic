@@ -40,7 +40,7 @@ $ cargo run -p viewer FILE_NAME
 
 ## Other Apps
 
-- [Online Image Viewer](https://github.com/neri/image-viewer)
+- [Online Image Viewer](https://nerry.jp/image-viewer/)
 
 ----
 
