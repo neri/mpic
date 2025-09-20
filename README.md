@@ -16,7 +16,7 @@ Simple Lossy Compression Image Format for Embedded Platforms
 - Designed for 16bpp color images and supports `embedded-graphics`; add `features = ["embedded"]` to Cargo.toml.
 - Support for `no_std`, No `alloc` is needed for decoding.
 
-## MSRV
+### MSRV
 
 - The latest version is recommended whenever possible.
 

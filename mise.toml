@@ -1,0 +1,13 @@
+[tasks.clean]
+confirm = "Are youn sure?"
+description = "Clean up"
+run = "cargo clean"
+
+[tasks.update]
+confirm = "Are youn sure?"
+description = "Update dependencies"
+run = "cargo update"
+
+[tasks.test]
+description = "Run a test"
+run = "cargo test"
