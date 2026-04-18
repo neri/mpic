@@ -56,7 +56,7 @@ $ cargo run -p viewer FILE_NAME
 
 - Divide the image into blocks of 8 x 8 pixels.
 - Convert RGB with 8 bits per channel to YUV with 6 bits per channel.
-- Thin out the U and V channels to 1/4.
+- Thin out the U and V channels to 1/4. (YUV420)
 - Because the color difference information is thinned out, even in the worst case, the compression is guaranteed to be more than half of the raw bitmap.
 - Finally, lossless compression is performed using the sliding dictionary method.
 - When decoding, these processes are performed in reverse order.
@@ -154,9 +154,9 @@ fn u6_to_u8(val) {
 
 | Representation          | Meaning                                                                                                             |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `00vv_vvvv`             | Raw Value                                                                                                           |
+| `00vv_vvvv`             | Literal Value                                                                                                       |
 | `01nn_nnnn` `00mm_mmmm` | Together with the trailing byte value, it indicates the length `(n+3)` and offset `-(m+1)` of the slide dictionary. |
-| `01xx_xxxx` `NNxx_xxxx` | RESERVED (NN!=00)                                                                                                   |
+| `01xx_xxxx` `NNxx_xxxx` | CURRENTLY UNUSED (NN!=00)                                                                                           |
 | `1nnm_mmmm`             | Short form of sliding dictionary, it indicates the length `(n+2)` and offset `-(m+1)`.                              |
 
 ----

@@ -70,8 +70,13 @@ fn main() {
             let rgb = dynamic_image.to_rgb8();
             let raw_image = rgb.as_raw();
 
-            let output_buf = mpic::Encoder::encode(&raw_image, rgb.width(), rgb.height())
-                .expect("cannot write output");
+            let output_buf = mpic::Encoder::encode2(
+                &raw_image,
+                rgb.width(),
+                rgb.height(),
+                mpic::lz::CompressionLevel::Best,
+            )
+            .expect("cannot write output");
             std::fs::write(&output, output_buf).expect("cannot write output");
         }
         Format::Raw => {

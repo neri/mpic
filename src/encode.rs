@@ -1,23 +1,67 @@
+#[cfg(feature = "alloc")]
+use crate::lz::CompressionLevel;
 use crate::{chunk::UNCOMPRESSED_SIZE, color::*, *};
 use heapless::Vec;
 
+/// Encoder for MPIC format.
 pub struct Encoder;
 
 impl Encoder {
+    #[deprecated(note = "Use `encode2` instead, which allows specifying the compression level.")]
     #[cfg(feature = "alloc")]
+    #[inline]
     pub fn encode(
         data: &[u8],
         width: u32,
         height: u32,
     ) -> Result<alloc::vec::Vec<u8>, EncodeError> {
         let mut vec = alloc::vec::Vec::new();
-        Self::encode_to_writer(data, width, height, |v| vec.extend_from_slice(v)).map(|_| vec)
+        Self::encode_to_writer2(data, width, height, CompressionLevel::Default, |v| {
+            vec.extend_from_slice(v)
+        })
+        .map(|_| vec)
     }
 
+    #[deprecated(
+        note = "Use `encode_to_writer2` instead, which allows specifying the compression level."
+    )]
+    #[inline]
     pub fn encode_to_writer<F>(
         data: &[u8],
         width: u32,
         height: u32,
+        writer: F,
+    ) -> Result<(), EncodeError>
+    where
+        F: FnMut(&[u8]),
+    {
+        Self::encode_to_writer2(data, width, height, CompressionLevel::Default, writer)
+    }
+
+    /// Encode the image data to a vector of bytes.
+    ///
+    /// The input data should be in RGB888 format (3 bytes per pixel).
+    #[cfg(feature = "alloc")]
+    #[inline]
+    pub fn encode2(
+        data: &[u8],
+        width: u32,
+        height: u32,
+        level: CompressionLevel,
+    ) -> Result<alloc::vec::Vec<u8>, EncodeError> {
+        let mut vec = alloc::vec::Vec::new();
+        Self::encode_to_writer2(data, width, height, level, |v| vec.extend_from_slice(v))
+            .map(|_| vec)
+    }
+
+    /// Encode the image data to a writer function.
+    ///
+    /// The input data should be in RGB888 format (3 bytes per pixel).
+    pub fn encode_to_writer2<F>(
+        data: &[u8],
+        width: u32,
+        height: u32,
+        level: CompressionLevel,
         mut writer: F,
     ) -> Result<(), EncodeError>
     where
@@ -52,24 +96,24 @@ impl Encoder {
                     buf_u[index] = yuv.u;
                     buf_v[index] = yuv.v;
                 }
-                let block = Self::encode_chunk(&buf_y, &buf_u, &buf_v);
+                let block = Self::encode_chunk(&buf_y, &buf_u, &buf_v, level);
                 writer(&[block.len() as u8]);
                 writer(block.as_slice());
             }
             if w7 > 0 {
-                let block = Self::_encode_edge(data, width, w8, y8, w7, 8);
+                let block = Self::_encode_edge(data, width, w8, y8, w7, 8, level);
                 writer(&[block.len() as u8]);
                 writer(block.as_slice());
             }
         }
         if h7 > 0 {
             for x8 in (0..w8).step_by(8) {
-                let block = Self::_encode_edge(data, width, x8, h8, 8, h7);
+                let block = Self::_encode_edge(data, width, x8, h8, 8, h7, level);
                 writer(&[block.len() as u8]);
                 writer(block.as_slice());
             }
             if w7 > 0 {
-                let block = Self::_encode_edge(data, width, w8, h8, w7, h7);
+                let block = Self::_encode_edge(data, width, w8, h8, w7, h7, level);
                 writer(&[block.len() as u8]);
                 writer(block.as_slice());
             }
@@ -79,7 +123,15 @@ impl Encoder {
     }
 
     #[inline]
-    fn _encode_edge(data: &[u8], width: u32, x8: u32, y8: u32, w7: u32, h7: u32) -> Vec<u8, 128> {
+    fn _encode_edge(
+        data: &[u8],
+        width: u32,
+        x8: u32,
+        y8: u32,
+        w7: u32,
+        h7: u32,
+        level: CompressionLevel,
+    ) -> Vec<u8, 128> {
         let w7 = w7 as usize;
         let h7 = h7 as usize;
         assert!(w7 > 0 && w7 <= 8);
@@ -134,10 +186,16 @@ impl Encoder {
             }
         }
 
-        Self::encode_chunk(&buf_y, &buf_u, &buf_v)
+        Self::encode_chunk(&buf_y, &buf_u, &buf_v, level)
     }
 
-    pub fn encode_chunk(buf_y: &[u8; 64], buf_u: &[u8; 64], buf_v: &[u8; 64]) -> Vec<u8, 128> {
+    /// Encode a single chunk of YUV data to MPIC format. (intend for internal use)
+    pub fn encode_chunk(
+        buf_y: &[u8; 64],
+        buf_u: &[u8; 64],
+        buf_v: &[u8; 64],
+        level: CompressionLevel,
+    ) -> Vec<u8, 128> {
         let mut buf = [0; UNCOMPRESSED_SIZE];
         for i in 0..64 {
             buf[i] = buf_y[i];
@@ -153,8 +211,7 @@ impl Encoder {
         }
 
         let mut vec = Vec::<u8, 128>::new();
-        chunk::compress(&buf, &mut vec);
-        // vec.extend_from_slice(&buf).unwrap();
+        chunk::compress(&buf, &mut vec, level);
 
         #[cfg(test)]
         {

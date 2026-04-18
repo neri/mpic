@@ -1,6 +1,9 @@
+//! Color types
+
 #[cfg(feature = "embedded")]
 use embedded_graphics::pixelcolor::*;
 
+/// 8-bit per channel RGB color.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct MpicRgb888 {
     pub r: u8,
@@ -8,6 +11,7 @@ pub struct MpicRgb888 {
     pub b: u8,
 }
 
+/// 6-bit per channel RGB color.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct MpicRgb666 {
     r: u8,
@@ -15,6 +19,7 @@ pub struct MpicRgb666 {
     b: u8,
 }
 
+/// 6-bit per channel YUV color.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct MpicYuv666 {
     pub y: u8,

@@ -5,6 +5,7 @@ use heapless::Vec;
 #[cfg(feature = "embedded")]
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
+/// Decoder for MPIC format.
 pub struct Decoder<'a, T> {
     blob: &'a [u8],
     info: ImageInfo,
@@ -12,6 +13,9 @@ pub struct Decoder<'a, T> {
 }
 
 impl<'a, T> Decoder<'a, T> {
+    /// Create a new decoder from the given MPIC data blob.
+    ///
+    /// Returns `None` if the data is not a valid MPIC file.
     #[inline]
     pub fn new(blob: &'a [u8]) -> Option<Self> {
         let header = FileHeader::from_bytes(blob)?;
@@ -26,11 +30,15 @@ impl<'a, T> Decoder<'a, T> {
         })
     }
 
+    /// Get the image information (width and height).
     #[inline]
     pub fn info(&self) -> ImageInfo {
         self.info
     }
 
+    /// Decode the MPIC data to a vector of bytes in RGB888 format (3 bytes per pixel).
+    ///
+    /// Returns an error if the data is invalid.
     #[cfg(feature = "alloc")]
     pub fn decode(&self) -> Result<alloc::vec::Vec<u8>, DecodeError> {
         let width = self.info().width() as usize;
@@ -41,6 +49,11 @@ impl<'a, T> Decoder<'a, T> {
         self.decode_to_slice(vec.as_mut()).map(|_| vec)
     }
 
+    /// Decode the MPIC data to the given output buffer in RGB888 format (3 bytes per pixel).
+    ///
+    /// The output buffer should have a length of at least `width * height * 3` bytes, where `width` and `height` are the dimensions of the image.
+    ///
+    /// Returns an error if the data is invalid or if the output buffer is too small.
     pub fn decode_to_slice(&self, output: &mut [u8]) -> Result<(), DecodeError> {
         let width = self.info().width() as usize;
         let height = self.info().height() as usize;
@@ -129,6 +142,7 @@ impl<'a, T> Decoder<'a, T> {
         Ok(len + 1)
     }
 
+    /// Decode the MPIC data to a vector of bytes in RGBA8888 format (4 bytes per pixel).
     #[cfg(feature = "alloc")]
     pub fn decode_rgba(&self) -> Result<alloc::vec::Vec<u8>, DecodeError> {
         let width = self.info().width() as usize;
@@ -291,6 +305,7 @@ impl<'a, T> Decoder<'a, T> {
         result
     }
 
+    /// Decode a single chunk of MPIC data to YUV buffers. (intend for internal use)
     pub fn decode_chunk(src: &[u8]) -> Result<([u8; 64], [u8; 64], [u8; 64]), DecodeError> {
         let mut vec = Vec::<u8, UNCOMPRESSED_SIZE>::new();
         chunk::decompress(src, &mut vec).ok_or(DecodeError::InvalidData)?;
